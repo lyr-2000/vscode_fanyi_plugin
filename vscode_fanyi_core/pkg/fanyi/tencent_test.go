@@ -17,7 +17,7 @@ func Test_t(t *testing.T) {
 		t.Fatalf("init client failed: %v", err)
 	}
 
-	response, err := cli.Translate("hello", "en", "zh")
+	response, err := cli.Translate("hello", "auto", "zh")
 	if err != nil {
 		t.Fatalf("translate failed: %v", err)
 	}

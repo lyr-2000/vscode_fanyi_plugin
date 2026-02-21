@@ -1,151 +1,18 @@
 # VSCode 划词翻译插件
 
-一个功能强大的 VSCode 划词翻译插件，采用插件 + 核心程序的架构设计，支持多种翻译服务提供商。
+一个功能强大的 VSCode 划词翻译插件，采用插件 + 核心程序的架构设计，可定制扩展接入多种翻译服务提供商。
 
 **GitHub 仓库**: [https://github.com/lyr-2000/vscode_fanyi_plugin](https://github.com/lyr-2000/vscode_fanyi_plugin)
 
 ## 📋 目录
 
-- [项目架构](#项目架构)
-- [核心程序原理](#核心程序原理)
 - [功能特性](#功能特性)
+- [快速开始](#快速开始)
 - [安装](#安装)
 - [配置](#配置)
 - [使用方法](#使用方法)
-- [开发](#开发)
+- [常见问题](#常见问题)
 
-## 🏗️ 项目架构
-
-本项目采用**前后端分离**的架构设计：
-
-```
-┌─────────────────────────────────┐
-│   vscode_fanyi_plugin            │
-│   (VSCode 扩展插件)              │
-│   - TypeScript                   │
-│   - UI 交互                      │
-│   - 命令注册                     │
-│   - 配置管理                     │
-└──────────────┬──────────────────┘
-               │ stdin/stdout
-               │ JSON 协议
-               ▼
-┌─────────────────────────────────┐
-│   vscode_fanyi_core             │
-│   (翻译核心程序)                │
-│   - Go 语言                     │
-│   - 进程通信                    │
-│   - API 调用                    │
-│   - 日志记录                    │
-└─────────────────────────────────┘
-```
-
-### 架构优势
-
-1. **语言隔离**：插件使用 TypeScript，核心程序使用 Go，各司其职
-2. **性能优化**：Go 程序编译为独立可执行文件，启动快速
-3. **易于扩展**：核心程序可独立更新，不影响插件
-4. **跨平台**：核心程序可编译为不同平台的可执行文件
-
-## 🔧 核心程序原理 (vscode_fanyi_core)
-
-### 通信协议
-
-`vscode_fanyi_core` 是一个**命令行程序**，通过 **stdin/stdout** 与插件进行 JSON 格式的进程间通信。
-
-#### 请求格式
-
-```json
-{
-  "command": "init|translateText|exit",
-  "data": { ... }
-}
-```
-
-#### 响应格式
-
-```json
-{
-  "code": 0,
-  "message": "成功/错误信息",
-  "data": { ... }
-}
-```
-
-### 工作流程
-
-1. **进程启动**
-   - 插件通过 `spawn()` 启动 `fanyi_core.exe` 进程
-   - 配置 `stdio: ['pipe', 'pipe', 'pipe']` 建立标准输入输出通道
-
-2. **初始化阶段**
-   ```json
-   // 插件发送
-   {
-     "command": "init",
-     "data": {
-       "tencent_ak": "your_ak",
-       "tencent_secret": "your_secret"
-     }
-   }
-   
-   // 核心程序响应
-   {
-     "code": 0,
-     "message": "初始化成功",
-     "data": { "success": true }
-   }
-   ```
-
-3. **翻译请求**
-   ```json
-   // 插件发送
-   {
-     "command": "translateText",
-     "data": {
-       "text": "Hello",
-       "src": "en",
-       "to": "zh"
-     }
-   }
-   
-   // 核心程序响应
-   {
-     "code": 0,
-     "message": "翻译成功",
-     "data": {
-       "text": "你好",
-       "original": "Hello",
-       "src": "en",
-       "to": "zh"
-     }
-   }
-   ```
-
-4. **退出程序**
-   ```json
-   {
-     "command": "exit",
-     "data": {}
-   }
-   ```
-
-### 请求队列机制
-
-插件使用**请求队列**管理异步请求：
-
-- 每个请求分配一个 Promise
-- 请求按顺序发送到核心程序
-- 响应按顺序从队列中取出并解析
-- 支持 30 秒超时机制
-
-### 日志功能
-
-核心程序支持日志记录功能：
-
-- 当 `log_file_enable` 配置为 `true` 时，记录翻译日志到 `app.log`
-- 日志文件超过 10MB 时自动清空
-- 记录内容：翻译请求、成功/失败信息、错误堆栈
 
 ## ✨ 功能特性
 
@@ -157,60 +24,118 @@
 - ✅ **错误日志**：翻译失败时输出详细错误信息到输出面板
 - ✅ **调试模式**：支持在输出面板显示翻译结果
 
+## 🚀 快速开始
+
+1. **安装插件**
+   - 从 VSCode 扩展商店搜索 "VSCode 划词翻译插件" 并安装
+   - 或下载 `.vsix` 文件手动安装
+
+2. **下载翻译核心程序**
+   - 访问 [Releases 页面](https://github.com/lyr-2000/vscode_fanyi_plugin/releases) 下载 `fanyi_core.exe`
+   - 将文件保存到本地任意目录
+
+3. **配置插件**
+   - 打开 VSCode 设置（`Ctrl+,`）
+   - 配置 `fanyi_core.exe` 的路径
+   - 配置腾讯翻译 API 密钥
+
+4. **开始使用**
+   - 选中文本，按 `Ctrl+Shift+T` 进行翻译
+   - 或悬停在文本上自动显示翻译结果
+
 ## 📦 安装
 
-### 前置要求
+### 方式一：从扩展商店安装（推荐）
 
-1. **编译核心程序**（如果使用源码）
-   ```bash
-   cd vscode_fanyi_core
-   go build -o fanyi_core.exe
-   ```
+1. 打开 VSCode
+2. 点击左侧扩展图标（或按 `Ctrl+Shift+X`）
+3. 搜索 "VSCode 划词翻译插件"
+4. 点击安装
 
-2. **安装插件依赖**
-   ```bash
-   cd vscode_fanyi_plugin
-   npm install
-   npm run compile
-   ```
+### 方式二：手动安装
 
-### 安装方式
+1. 从 [Releases 页面](https://github.com/lyr-2000/vscode_fanyi_plugin/releases) 下载 `.vsix` 文件
+2. 在 VSCode 中按 `Ctrl+Shift+P` 打开命令面板
+3. 输入 "Extensions: Install from VSIX..."
+4. 选择下载的 `.vsix` 文件进行安装
 
-#### 方式一：开发模式
-1. 在 VSCode 中打开项目
-2. 按 `F5` 启动调试窗口
+### 下载翻译核心程序
 
-#### 方式二：打包安装
-```bash
-cd vscode_fanyi_plugin
-npm install -g vsce
-vsce package
-# 安装生成的 .vsix 文件
-```
+安装插件后，还需要下载翻译核心程序：
+
+1. 访问 [Releases 页面](https://github.com/lyr-2000/vscode_fanyi_plugin/releases)
+2. 下载对应平台的 `fanyi_core.exe`（Windows）或 `fanyi_core`（Linux/macOS）
+3. 将文件保存到本地目录（建议放在固定位置，如 `C:\Tools\fanyi_core.exe`）
 
 ## ⚙️ 配置
 
-在 VSCode 设置文件（`.vscode/settings.json` 或用户设置）中配置：
+### 步骤 1：配置核心程序路径
 
-### 基本配置
+打开 VSCode 设置（`Ctrl+,`），搜索 "fanyi"，配置 `fanyi_core.exe` 的路径：
+
+**方式一：单个路径**
+```json
+{
+  "vscode_fanyi_plugin.binPath": "C:\\Tools\\fanyi_core.exe"
+}
+```
+
+**方式二：多个路径（推荐）**
+如果配置多个路径，插件会自动查找第一个存在的文件：
+```json
+{
+  "vscode_fanyi_plugin.binPath": [
+    "C:\\Tools\\fanyi_core.exe",
+    "D:\\Programs\\fanyi_core.exe",
+    "fanyi_core.exe"  // 如果在 PATH 环境变量中
+  ]
+}
+```
+
+### 步骤 2：配置 API 密钥
+
+1. **获取腾讯翻译 API 密钥**
+   - 访问 [腾讯云控制台](https://console.cloud.tencent.com/)
+   - 开通"机器翻译"服务
+   - 获取 Access Key ID 和 Secret Access Key
+
+2. **在 VSCode 设置中配置**
+   ```json
+   {
+     "vscode_fanyi_plugin.config": {
+       "tencent_ak": "你的腾讯云 Access Key",
+       "tencent_secret": "你的腾讯云 Secret Key"
+     }
+   }
+   ```
+
+### 步骤 3：配置翻译选项（可选）
 
 ```json
 {
-  // fanyi_core.exe 的路径（支持字符串或数组）, 负责处理翻译的代码逻辑,翻译core.exe 需要自行下载 
-  // 下载链接: https://github.com/lyr-2000/vscode_fanyi_plugin/releases
-  "vscode_fanyi_plugin.binPath": [
-    "C:\\path1\\fanyi_core.exe",
-    "C:\\path2\\fanyi_core.exe"
-  ],
+  // 源语言：auto（自动检测）、en（英语）、zh（中文）、ja（日语）等
+  "vscode_fanyi_plugin.sourceLanguage": "auto",
   
-  // API 密钥配置, 默认使用腾讯翻译 的 api key , 如果有其他的翻译服务，需要你下载 vscode_fanyi_core项目，接入逻辑编译成对应的可执行文件
-  // 目前只有腾讯api的实现， 如有需要，自行开发fanyi_core的逻辑 接入其他翻译服务
+  // 目标语言：zh（中文）、en（英语）、ja（日语）等
+  "vscode_fanyi_plugin.targetLanguage": "zh",
+  
+  // 是否显示通知弹窗
+  "vscode_fanyi_plugin.showNotification": true,
+  
+  // 是否在输出面板显示结果（用于调试）
+  "vscode_fanyi_plugin.showOutput": false
+}
+```
+
+### 完整配置示例
+
+```json
+{
+  "vscode_fanyi_plugin.binPath": "C:\\Tools\\fanyi_core.exe",
   "vscode_fanyi_plugin.config": {
-    "tencent_ak": "your_tencent_ak",
-    "tencent_secret": "your_tencent_secret"
+    "tencent_ak": "AKIDxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "tencent_secret": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
   },
-  
-  // 翻译配置
   "vscode_fanyi_plugin.sourceLanguage": "auto",
   "vscode_fanyi_plugin.targetLanguage": "zh",
   "vscode_fanyi_plugin.showNotification": true,
@@ -218,123 +143,141 @@ vsce package
 }
 ```
 
-### 配置说明
+### 配置项说明
 
 | 配置项 | 类型 | 默认值 | 说明 |
 |--------|------|--------|------|
-| `binPath` | string \| string[] | `""` | fanyi_core.exe 的路径，数组时自动查找第一个存在的文件 |
-| `config` | object | `{}` | API 密钥配置对象 |
-| `sourceLanguage` | string | `"auto"` | 源语言（auto 为自动检测） |
+| `binPath` | string \| string[] | `""` | 翻译核心程序路径，支持单个路径或路径数组 |
+| `config.tencent_ak` | string | `""` | 腾讯翻译 API Access Key（必填） |
+| `config.tencent_secret` | string | `""` | 腾讯翻译 API Secret Key（必填） |
+| `sourceLanguage` | string | `"auto"` | 源语言，`auto` 为自动检测 |
 | `targetLanguage` | string | `"zh"` | 目标语言 |
-| `showNotification` | boolean | `true` | 是否显示通知弹窗 |
+| `showNotification` | boolean | `true` | 翻译时是否显示通知弹窗 |
 | `showOutput` | boolean | `false` | 是否在输出面板显示结果（调试用） |
-
-### 核心程序配置（通过 init 命令传递）
-
-核心程序支持以下配置项（通过 `config` 对象传递）：
-
-- `tencent_ak`: 腾讯翻译 API Access Key
-- `tencent_secret`: 腾讯翻译 API Secret Key
-- `log_file_enable`: 是否启用日志文件（boolean）
 
 ## 🚀 使用方法
 
-### 方法一：快捷键翻译
+### 方法一：快捷键翻译（最常用）
 
-1. 选中要翻译的文本
-2. 按 `Ctrl+Shift+T`（Mac: `Cmd+Shift+T`）
-3. 翻译结果会显示在通知中
+1. **选中文本**：在编辑器中选中要翻译的文本（可以是单词、短语或句子）
+2. **按快捷键**：`Ctrl+Shift+T`（Windows/Linux）或 `Cmd+Shift+T`（macOS）
+3. **查看结果**：翻译结果会以通知弹窗的形式显示
 
-### 方法二：命令面板
+**示例：**
+- 选中 "Hello World" → 按 `Ctrl+Shift+T` → 显示 "你好，世界"
 
-1. 选中要翻译的文本
-2. 按 `Ctrl+Shift+P` 打开命令面板
-3. 输入 "翻译选中文本" 并执行
+### 方法二：命令面板翻译
 
-### 方法三：悬停翻译
+1. **选中文本**：在编辑器中选中要翻译的文本
+2. **打开命令面板**：按 `Ctrl+Shift+P`（Windows/Linux）或 `Cmd+Shift+P`（macOS）
+3. **输入命令**：输入 "翻译选中文本" 或 "translate"
+4. **执行命令**：选择并执行命令
 
-1. **选中文本后悬停**：选中一段文字，将鼠标悬停在选中文本上，会翻译整个选中文本
-2. **单词悬停**：将鼠标悬停在单词上，会翻译该单词
+### 方法三：悬停翻译（自动翻译）
 
-### 命令列表
+#### 单词悬停翻译
+- 将鼠标悬停在任意单词上
+- 自动显示该单词的翻译结果
+- 无需选中文本，无需按快捷键
 
-- `vscode_fanyi_plugin.translate` - 翻译选中文本
-- `vscode_fanyi_plugin.translateSelection` - 翻译选中文本（显示在通知中）
+#### 选中文本悬停翻译
+- 先选中一段文本
+- 将鼠标悬停在选中的文本上
+- 自动显示整个选中文本的翻译结果
 
-## 🛠️ 开发
+**提示：** 悬停翻译会在鼠标移开时自动消失，非常适合快速查看翻译。
 
-### 项目结构
+### 使用技巧
 
-```
-vscode_fanyi_api/
-├── vscode_fanyi_plugin/          # VSCode 扩展插件
-│   ├── src/
-│   │   ├── extension.ts         # 插件主入口
-│   │   └── fanyi_core_client.ts # 核心程序客户端
-│   ├── package.json
-│   └── tsconfig.json
-└── vscode_fanyi_core/            # 翻译核心程序
-    ├── main.go                   # 主程序入口
-    ├── pkg/
-    │   ├── fanyi/               # 翻译服务实现
-    │   └── settings/            # 配置管理
-    └── go.mod
-```
+1. **翻译长文本**：选中多行文本，使用快捷键或命令面板翻译
+2. **快速查看单词**：直接悬停在单词上，无需选中
+3. **查看翻译历史**：如果翻译失败，可以在输出面板（`Ctrl+Shift+U`）查看详细错误信息
+4. **切换语言**：在设置中修改 `sourceLanguage` 和 `targetLanguage` 来改变翻译方向
 
-### 开发命令
+### 支持的语言
 
-#### 插件开发
+- **中文** (zh)
+- **英语** (en)
+- **日语** (ja)
+- **韩语** (ko)
+- **法语** (fr)
+- **德语** (de)
+- **西班牙语** (es)
+- **俄语** (ru)
+- **葡萄牙语** (pt)
+- **意大利语** (it)
+- 更多语言请参考腾讯翻译 API 文档
 
-```bash
-cd vscode_fanyi_plugin
+## ❓ 常见问题
 
-# 安装依赖
-npm install
+### Q1: 提示 "找不到 fanyi_core.exe"
 
-# 编译
-npm run compile
+**原因：** 未配置或配置的路径不正确。
 
-# 监听模式编译
-npm run watch
-```
+**解决方法：**
+1. 确认已下载 `fanyi_core.exe` 文件
+2. 在 VSCode 设置中配置正确的路径：
+   ```json
+   {
+     "vscode_fanyi_plugin.binPath": "C:\\完整路径\\fanyi_core.exe"
+   }
+   ```
+3. 如果文件在 PATH 环境变量中，可以直接写文件名：
+   ```json
+   {
+     "vscode_fanyi_plugin.binPath": "fanyi_core.exe"
+   }
+   ```
 
-#### 核心翻译程序开发
+### Q2: 翻译失败，提示 API 错误
 
-```bash
-cd vscode_fanyi_core
+**原因：** API 密钥未配置或配置错误。
 
-# 编译
-go build -o fanyi_core.exe
+**解决方法：**
+1. 检查腾讯云 API 密钥是否正确
+2. 确认已开通"机器翻译"服务
+3. 检查 API 密钥是否有余额或权限
+4. 在输出面板（`Ctrl+Shift+U`）查看详细错误信息
 
-# 运行测试
-go test ./...
-```
+### Q3: 悬停翻译不工作
 
-### 调试
+**原因：** 可能是编辑器焦点问题或配置问题。
 
-1. **插件调试**：在 VSCode 中按 `F5` 启动调试窗口
-2. **核心程序调试**：直接运行 `fanyi_core.exe`，通过 stdin 输入 JSON 测试
-3. **查看日志**：如果启用了日志，查看 `app.log` 文件
-4. **输出面板**：翻译失败时，查看 VSCode 输出面板中的详细错误信息
+**解决方法：**
+1. 确保编辑器处于焦点状态
+2. 尝试先选中文本再悬停
+3. 检查 VSCode 版本是否满足要求（>= 1.74.0）
 
-### 错误排查
+### Q4: 翻译结果不准确
 
-1. **binPath 未找到**
-   - 检查配置路径是否正确
-   - 如果使用数组，检查是否有文件存在
-   - 查看开发者控制台的错误信息
+**原因：** 可能是源语言检测不准确。
 
-2. **翻译失败**
-   - 检查 API 密钥是否正确配置
-   - 查看输出面板的详细错误信息
-   - 检查网络连接
-   - 查看 `app.log` 日志文件（如果启用）
+**解决方法：**
+1. 在设置中手动指定源语言，而不是使用 `auto`
+2. 例如：如果翻译英文，设置 `"sourceLanguage": "en"`
 
-3. **进程启动失败**
-   - 确认 `fanyi_core.exe` 文件存在且可执行
-   - 检查文件权限
-   - 查看错误信息中的详细路径和错误代码
+### Q5: 如何查看详细的错误日志？
+
+**解决方法：**
+1. 打开输出面板：`Ctrl+Shift+U`（Windows/Linux）或 `Cmd+Shift+U`（macOS）
+2. 在输出面板的下拉菜单中选择 "VSCode 划词翻译插件"
+3. 查看详细的错误信息和调试日志
+
+### Q6: 支持哪些翻译服务？
+
+**当前支持：**
+- 腾讯翻译 API
+
+**扩展其他服务：**
+如果需要接入其他翻译服务（如百度、有道、Google 等），需要：
+1. 下载 `vscode_fanyi_core` 项目源码
+2. 参考现有实现添加新的翻译服务
+3. 重新编译生成可执行文件
+4. 更新配置使用新的可执行文件
+
+详细开发文档请参考 [vscode_fanyi_core README](https://github.com/lyr-2000/vscode_fanyi_plugin/tree/main/vscode_fanyi_core/README.md)
 
 ## 📝 许可证
 
 MIT
+`

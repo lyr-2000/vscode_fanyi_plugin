@@ -2,7 +2,9 @@
   "name": "vscode-fanyi-plugin",
   "displayName": "VSCode 划词翻译插件",
   "description": "一个功能强大的 VSCode 划词翻译插件，支持多种翻译服务",
-  "version": "0.1.0",
+  "version": "0.1.1",
+  "publisher": "lyr-2000",
+  "icon": "images/logo.png",
   "engines": {
     "vscode": "^1.74.0"
   },

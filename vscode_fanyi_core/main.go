@@ -17,11 +17,7 @@ type Request struct {
 	Data    json.RawMessage `json:"data"`
 }
 
-// InitRequest 初始化秘钥请求
-type InitRequest struct {
-	TencentAK     string `json:"tencent_ak"`
-	TencentSecret string `json:"tencent_secret"`
-}
+
 
 // TranslateRequest 翻译请求
 type TranslateRequest struct {
@@ -110,7 +106,6 @@ func handleInput(input string) bool {
 
 // handleInit 处理初始化命令
 func handleInit(data json.RawMessage) Response {
-	// var initReq InitRequest
 	var keys map[string]interface{}
 	if err := json.Unmarshal(data, &keys); err != nil {
 		return Response{
