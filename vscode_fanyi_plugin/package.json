@@ -2,7 +2,7 @@
   "name": "vscode-fanyi-plugin",
   "displayName": "VSCode 划词翻译插件",
   "description": "一个功能强大的 VSCode 划词翻译插件，支持多种翻译服务",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "publisher": "lyr-2000",
   "icon": "images/logo.png",
   "engines": {
@@ -51,17 +51,52 @@
           "type": "boolean",
           "default": false,
           "description": "翻译时在输出面板显示结果（用于调试）"
+        },
+        "vscode_fanyi_plugin.subCommands": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "menu": {
+                "type": "boolean",
+                "description": "是否在右键菜单中显示"
+              },
+              "title": {
+                "type": "string",
+                "description": "命令标题（显示在命令面板和右键菜单中）"
+              },
+              "command": {
+                "type": "string",
+                "description": "要执行的命令"
+              },
+              "args": {
+                "type": "object",
+                "description": "命令参数（如 sourceLanguage, targetLanguage）"
+              }
+            },
+            "required": ["title", "command"]
+          },
+          "default": [],
+          "description": "自定义子命令列表，支持动态添加到命令面板和右键菜单"
         }
       }
     },
     "commands": [
       {
-        "command": "vscode_fanyi_plugin.translate",
-        "title": "翻译选中文本"
+        "command": "vscode_fanyi_plugin.translateAndCopy",
+        "title": "翻译选中内容并复制"
       },
       {
         "command": "vscode_fanyi_plugin.translateSelection",
-        "title": "翻译选中文本（显示在通知中）"
+        "title": "翻译选中文本"
+      },
+      {
+        "command": "vscode_fanyi_plugin.testSubCommands",
+        "title": "翻译: 测试子命令配置"
+      },
+      {
+        "command": "vscode_fanyi_plugin.subCommand",
+        "title": "翻译: 自定义子命令"
       }
     ],
     "keybindings": [
@@ -71,7 +106,32 @@
         "mac": "cmd+shift+t",
         "when": "editorTextFocus"
       }
-    ]
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "vscode_fanyi_plugin.translateSelection",
+          "when": "editorHasSelection",
+          "group": "navigation"
+        },
+        {
+          "command": "vscode_fanyi_plugin.translateAndCopy",
+          "when": "editorHasSelection",
+          "group": "navigation"
+        },
+        {
+          "command": "vscode_fanyi_plugin.subCommand",
+          "when": "editorHasSelection",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "vscode_fanyi_plugin.subCommand",
+          "title": "翻译: 自定义子命令"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

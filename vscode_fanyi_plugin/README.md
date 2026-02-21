@@ -11,6 +11,7 @@
 - [安装](#安装)
 - [配置](#配置)
 - [使用方法](#使用方法)
+- [自定义子命令](#自定义子命令)
 - [常见问题](#常见问题)
 
 
@@ -21,6 +22,7 @@
 - ✅ **多服务支持**：支持腾讯翻译 API
 - ✅ **多语言支持**：支持多种语言互译
 - ✅ **配置灵活**：可自定义翻译服务、源语言和目标语言
+- ✅ **自定义子命令**：支持配置多个自定义翻译命令，快速切换不同语言对
 - ✅ **错误日志**：翻译失败时输出详细错误信息到输出面板
 - ✅ **调试模式**：支持在输出面板显示翻译结果
 
@@ -127,6 +129,46 @@
 }
 ```
 
+### 步骤 4：配置自定义子命令（可选）
+
+`subCommands` 允许你配置多个自定义翻译命令，每个命令可以有不同的语言对和翻译方式。这对于需要频繁切换翻译方向（如中英互译）的场景非常有用。
+
+**配置示例：**
+```json
+{
+  "vscode_fanyi_plugin.subCommands": [
+    {
+      "menu": true,
+      "title": "翻译选中内容并复制(中->英)",
+      "command": "vscode_fanyi_plugin.translateAndCopy",
+      "args": {
+        "sourceLanguage": "zh",
+        "targetLanguage": "en"
+      }
+    },
+    {
+      "menu": true,
+      "title": "翻译选中文本(英->中)",
+      "command": "vscode_fanyi_plugin.translateSelection",
+      "args": {
+        "sourceLanguage": "en",
+        "targetLanguage": "zh"
+      }
+    }
+  ]
+}
+```
+
+**配置项说明：**
+- `menu`（可选）：是否在右键菜单中显示，默认为 `false`
+- `title`（必填）：命令标题，显示在命令面板和快速选择菜单中
+- `command`（必填）：要执行的命令类型
+  - `vscode_fanyi_plugin.translateAndCopy`：翻译并自动复制到剪贴板
+  - `vscode_fanyi_plugin.translateSelection`：翻译选中文本（显示通知，可选择复制）
+- `args`（可选）：命令参数
+  - `sourceLanguage`：源语言（如 `"zh"`, `"en"`, `"auto"`）
+  - `targetLanguage`：目标语言（如 `"zh"`, `"en"`）
+
 ### 完整配置示例
 
 ```json
@@ -139,7 +181,27 @@
   "vscode_fanyi_plugin.sourceLanguage": "auto",
   "vscode_fanyi_plugin.targetLanguage": "zh",
   "vscode_fanyi_plugin.showNotification": true,
-  "vscode_fanyi_plugin.showOutput": false
+  "vscode_fanyi_plugin.showOutput": false,
+  "vscode_fanyi_plugin.subCommands": [
+    {
+      "menu": true,
+      "title": "翻译并复制(中->英)",
+      "command": "vscode_fanyi_plugin.translateAndCopy",
+      "args": {
+        "sourceLanguage": "zh",
+        "targetLanguage": "en"
+      }
+    },
+    {
+      "menu": true,
+      "title": "翻译文本(英->中)",
+      "command": "vscode_fanyi_plugin.translateSelection",
+      "args": {
+        "sourceLanguage": "en",
+        "targetLanguage": "zh"
+      }
+    }
+  ]
 }
 ```
 
@@ -154,6 +216,16 @@
 | `targetLanguage` | string | `"zh"` | 目标语言 |
 | `showNotification` | boolean | `true` | 翻译时是否显示通知弹窗 |
 | `showOutput` | boolean | `false` | 是否在输出面板显示结果（调试用） |
+| `subCommands` | array | `[]` | 自定义子命令列表，支持配置多个翻译命令 |
+
+**subCommands 配置项说明：**
+| 配置项 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| `menu` | boolean | 否 | 是否在右键菜单中显示，默认 `false` |
+| `title` | string | 是 | 命令标题（显示在命令面板和快速选择菜单中） |
+| `command` | string | 是 | 命令类型：`translateAndCopy`（翻译并复制）或 `translateSelection`（翻译显示） |
+| `args.sourceLanguage` | string | 否 | 源语言（覆盖全局配置） |
+| `args.targetLanguage` | string | 否 | 目标语言（覆盖全局配置） |
 
 ## 🚀 使用方法
 
@@ -187,12 +259,34 @@
 
 **提示：** 悬停翻译会在鼠标移开时自动消失，非常适合快速查看翻译。
 
+### 方法四：自定义子命令（subCommands）
+
+如果你配置了 `subCommands`，可以使用自定义的翻译命令：
+
+#### 使用方式一：命令面板
+
+1. **选中文本**：在编辑器中选中要翻译的文本
+2. **打开命令面板**：按 `Ctrl+Shift+P`
+3. **输入命令**：输入 "翻译: 自定义子命令"
+4. **选择子命令**：在弹出的快速选择菜单中选择要执行的子命令
+
+#### 使用方式二：右键菜单
+
+1. **选中文本**：在编辑器中选中要翻译的文本
+2. **右键点击**：在右键菜单中选择 "翻译: 自定义子命令"
+3. **选择子命令**：在弹出的快速选择菜单中选择要执行的子命令
+
+#### 使用方式三：测试配置
+
+在命令面板中输入 "翻译: 测试子命令配置"，可以查看当前配置的所有 subCommands 及其详细信息。
+
 ### 使用技巧
 
 1. **翻译长文本**：选中多行文本，使用快捷键或命令面板翻译
 2. **快速查看单词**：直接悬停在单词上，无需选中
 3. **查看翻译历史**：如果翻译失败，可以在输出面板（`Ctrl+Shift+U`）查看详细错误信息
 4. **切换语言**：在设置中修改 `sourceLanguage` 和 `targetLanguage` 来改变翻译方向
+5. **使用自定义子命令**：配置多个 subCommands，快速切换不同的语言对和翻译方式
 
 ### 支持的语言
 
@@ -207,6 +301,118 @@
 - **葡萄牙语** (pt)
 - **意大利语** (it)
 - 更多语言请参考腾讯翻译 API 文档
+
+## 🎯 自定义子命令
+
+自定义子命令（subCommands）功能允许你配置多个预设的翻译命令，每个命令可以有不同的语言对和翻译方式。这对于需要频繁切换翻译方向的场景非常有用。
+
+### 功能特点
+
+- ✅ **快速切换语言对**：配置多个命令，一键切换不同的翻译方向
+- ✅ **灵活的命令类型**：支持翻译并复制，或翻译显示两种方式
+- ✅ **右键菜单集成**：配置 `menu: true` 后，可在右键菜单中快速访问
+- ✅ **动态配置**：修改配置后无需重启，自动生效
+
+### 配置示例
+
+#### 示例 1：中英互译
+
+```json
+{
+  "vscode_fanyi_plugin.subCommands": [
+    {
+      "menu": true,
+      "title": "翻译并复制(中->英)",
+      "command": "vscode_fanyi_plugin.translateAndCopy",
+      "args": {
+        "sourceLanguage": "zh",
+        "targetLanguage": "en"
+      }
+    },
+    {
+      "menu": true,
+      "title": "翻译并复制(英->中)",
+      "command": "vscode_fanyi_plugin.translateAndCopy",
+      "args": {
+        "sourceLanguage": "en",
+        "targetLanguage": "zh"
+      }
+    }
+  ]
+}
+```
+
+#### 示例 2：多语言翻译
+
+```json
+{
+  "vscode_fanyi_plugin.subCommands": [
+    {
+      "menu": true,
+      "title": "中->英",
+      "command": "vscode_fanyi_plugin.translateAndCopy",
+      "args": {
+        "sourceLanguage": "zh",
+        "targetLanguage": "en"
+      }
+    },
+    {
+      "menu": true,
+      "title": "中->日",
+      "command": "vscode_fanyi_plugin.translateAndCopy",
+      "args": {
+        "sourceLanguage": "zh",
+        "targetLanguage": "ja"
+      }
+    },
+    {
+      "menu": true,
+      "title": "英->中",
+      "command": "vscode_fanyi_plugin.translateAndCopy",
+      "args": {
+        "sourceLanguage": "en",
+        "targetLanguage": "zh"
+      }
+    },
+    {
+      "menu": false,
+      "title": "日->中（仅命令面板）",
+      "command": "vscode_fanyi_plugin.translateSelection",
+      "args": {
+        "sourceLanguage": "ja",
+        "targetLanguage": "zh"
+      }
+    }
+  ]
+}
+```
+
+### 使用场景
+
+1. **中英互译**：配置两个命令，快速在中英文之间切换翻译
+2. **多语言翻译**：配置多个命令，支持中文、英文、日文、韩文等多种语言
+3. **不同翻译方式**：有些命令自动复制，有些命令显示通知可选择复制
+
+### 命令类型对比
+
+| 命令类型 | 行为 | 适用场景 |
+|---------|------|---------|
+| `translateAndCopy` | 翻译后自动复制到剪贴板 | 需要快速复制翻译结果 |
+| `translateSelection` | 翻译后显示通知，可选择复制 | 需要查看翻译结果后再决定是否复制 |
+
+### 配置说明
+
+- **`menu`**：设置为 `true` 时，该命令会出现在右键菜单中；设置为 `false` 时，只能通过命令面板访问
+- **`title`**：命令的显示名称，建议简洁明了
+- **`command`**：命令类型，必须是 `vscode_fanyi_plugin.translateAndCopy` 或 `vscode_fanyi_plugin.translateSelection`
+- **`args`**：命令参数，会覆盖全局的 `sourceLanguage` 和 `targetLanguage` 配置
+
+### 使用技巧
+
+1. **快速访问**：配置 `menu: true` 后，选中文本右键即可快速访问
+2. **命令面板**：所有 subCommands 都可以通过命令面板访问
+3. **测试配置**：使用 "翻译: 测试子命令配置" 命令查看当前配置的所有子命令
+4. **动态更新**：修改配置后，插件会自动重新加载，无需重启 VSCode
 
 ## ❓ 常见问题
 
@@ -263,7 +469,36 @@
 2. 在输出面板的下拉菜单中选择 "VSCode 划词翻译插件"
 3. 查看详细的错误信息和调试日志
 
-### Q6: 支持哪些翻译服务？
+### Q6: 如何配置和使用自定义子命令（subCommands）？
+
+**配置方法：**
+在 VSCode 设置中添加 `subCommands` 配置：
+```json
+{
+  "vscode_fanyi_plugin.subCommands": [
+    {
+      "menu": true,
+      "title": "翻译并复制(中->英)",
+      "command": "vscode_fanyi_plugin.translateAndCopy",
+      "args": {
+        "sourceLanguage": "zh",
+        "targetLanguage": "en"
+      }
+    }
+  ]
+}
+```
+
+**使用方法：**
+1. 选中文本后，在命令面板中输入 "翻译: 自定义子命令"
+2. 或右键点击选中文本，选择 "翻译: 自定义子命令"
+3. 在弹出的快速选择菜单中选择要执行的子命令
+
+**命令类型说明：**
+- `vscode_fanyi_plugin.translateAndCopy`：翻译后自动复制到剪贴板
+- `vscode_fanyi_plugin.translateSelection`：翻译后显示通知，可选择复制
+
+### Q7: 支持哪些翻译服务？
 
 **当前支持：**
 - 腾讯翻译 API
