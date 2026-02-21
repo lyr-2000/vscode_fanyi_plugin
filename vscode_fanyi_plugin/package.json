@@ -1,0 +1,85 @@
+{
+  "name": "vscode-fanyi-plugin",
+  "displayName": "VSCode 划词翻译插件",
+  "description": "一个功能强大的 VSCode 划词翻译插件，支持多种翻译服务",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "划词翻译",
+      "properties": {
+        "vscode_fanyi_plugin.binPath": {
+          "type": ["string", "array"],
+          "items": {
+            "type": "string"
+          },
+          "default": "",
+          "description": "fanyi_core.exe 的路径，可以是字符串或字符串数组。如果是数组，将使用第一个存在的文件路径"
+        },
+        "vscode_fanyi_plugin.config": {
+          "type": "object",
+          "default": {},
+          "description": "翻译服务配置（包含各厂商的 API 密钥）"
+        },
+        "vscode_fanyi_plugin.sourceLanguage": {
+          "type": "string",
+          "default": "auto",
+          "description": "源语言（auto 为自动检测）"
+        },
+        "vscode_fanyi_plugin.targetLanguage": {
+          "type": "string",
+          "default": "zh",
+          "description": "目标语言"
+        },
+        "vscode_fanyi_plugin.showNotification": {
+          "type": "boolean",
+          "default": true,
+          "description": "翻译时显示通知"
+        },
+        "vscode_fanyi_plugin.showOutput": {
+          "type": "boolean",
+          "default": false,
+          "description": "翻译时在输出面板显示结果（用于调试）"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "vscode_fanyi_plugin.translate",
+        "title": "翻译选中文本"
+      },
+      {
+        "command": "vscode_fanyi_plugin.translateSelection",
+        "title": "翻译选中文本（显示在通知中）"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "vscode_fanyi_plugin.translateSelection",
+        "key": "ctrl+shift+t",
+        "mac": "cmd+shift+t",
+        "when": "editorTextFocus"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "@types/vscode": "^1.74.0",
+    "typescript": "^4.9.0"
+  },
+  "dependencies": {}
+}

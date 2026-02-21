@@ -1,0 +1,12 @@
+out
+node_modules
+.vscode-test
+*.vsix
+.vscode
+.cursor
+test.txt
+*.exe
+*.js.map
+*.map
+*.txt
+*.exe~
