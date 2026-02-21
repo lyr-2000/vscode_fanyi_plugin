@@ -138,7 +138,6 @@
 {
   "vscode_fanyi_plugin.subCommands": [
     {
-      "menu": true,
       "title": "翻译选中内容并复制(中->英)",
       "command": "vscode_fanyi_plugin.translateAndCopy",
       "args": {
@@ -147,7 +146,6 @@
       }
     },
     {
-      "menu": true,
       "title": "翻译选中文本(英->中)",
       "command": "vscode_fanyi_plugin.translateSelection",
       "args": {
@@ -160,7 +158,6 @@
 ```
 
 **配置项说明：**
-- `menu`（可选）：是否在右键菜单中显示，默认为 `false`
 - `title`（必填）：命令标题，显示在命令面板和快速选择菜单中
 - `command`（必填）：要执行的命令类型
   - `vscode_fanyi_plugin.translateAndCopy`：翻译并自动复制到剪贴板
@@ -184,7 +181,6 @@
   "vscode_fanyi_plugin.showOutput": false,
   "vscode_fanyi_plugin.subCommands": [
     {
-      "menu": true,
       "title": "翻译并复制(中->英)",
       "command": "vscode_fanyi_plugin.translateAndCopy",
       "args": {
@@ -193,7 +189,6 @@
       }
     },
     {
-      "menu": true,
       "title": "翻译文本(英->中)",
       "command": "vscode_fanyi_plugin.translateSelection",
       "args": {
@@ -221,7 +216,6 @@
 **subCommands 配置项说明：**
 | 配置项 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
-| `menu` | boolean | 否 | 是否在右键菜单中显示，默认 `false` |
 | `title` | string | 是 | 命令标题（显示在命令面板和快速选择菜单中） |
 | `command` | string | 是 | 命令类型：`translateAndCopy`（翻译并复制）或 `translateSelection`（翻译显示） |
 | `args.sourceLanguage` | string | 否 | 源语言（覆盖全局配置） |
@@ -310,7 +304,6 @@
 
 - ✅ **快速切换语言对**：配置多个命令，一键切换不同的翻译方向
 - ✅ **灵活的命令类型**：支持翻译并复制，或翻译显示两种方式
-- ✅ **右键菜单集成**：配置 `menu: true` 后，可在右键菜单中快速访问
 - ✅ **动态配置**：修改配置后无需重启，自动生效
 
 ### 配置示例
@@ -321,7 +314,6 @@
 {
   "vscode_fanyi_plugin.subCommands": [
     {
-      "menu": true,
       "title": "翻译并复制(中->英)",
       "command": "vscode_fanyi_plugin.translateAndCopy",
       "args": {
@@ -330,7 +322,6 @@
       }
     },
     {
-      "menu": true,
       "title": "翻译并复制(英->中)",
       "command": "vscode_fanyi_plugin.translateAndCopy",
       "args": {
@@ -348,7 +339,6 @@
 {
   "vscode_fanyi_plugin.subCommands": [
     {
-      "menu": true,
       "title": "中->英",
       "command": "vscode_fanyi_plugin.translateAndCopy",
       "args": {
@@ -357,7 +347,6 @@
       }
     },
     {
-      "menu": true,
       "title": "中->日",
       "command": "vscode_fanyi_plugin.translateAndCopy",
       "args": {
@@ -366,7 +355,6 @@
       }
     },
     {
-      "menu": true,
       "title": "英->中",
       "command": "vscode_fanyi_plugin.translateAndCopy",
       "args": {
@@ -375,8 +363,7 @@
       }
     },
     {
-      "menu": false,
-      "title": "日->中（仅命令面板）",
+      "title": "日->中",
       "command": "vscode_fanyi_plugin.translateSelection",
       "args": {
         "sourceLanguage": "ja",
@@ -402,14 +389,13 @@
 
 ### 配置说明
 
-- **`menu`**：设置为 `true` 时，该命令会出现在右键菜单中；设置为 `false` 时，只能通过命令面板访问
 - **`title`**：命令的显示名称，建议简洁明了
 - **`command`**：命令类型，必须是 `vscode_fanyi_plugin.translateAndCopy` 或 `vscode_fanyi_plugin.translateSelection`
 - **`args`**：命令参数，会覆盖全局的 `sourceLanguage` 和 `targetLanguage` 配置
 
 ### 使用技巧
 
-1. **快速访问**：配置 `menu: true` 后，选中文本右键即可快速访问
+1. **快速访问**：配置subCommands 后，选中文本右键即可快速访问
 2. **命令面板**：所有 subCommands 都可以通过命令面板访问
 3. **测试配置**：使用 "翻译: 测试子命令配置" 命令查看当前配置的所有子命令
 4. **动态更新**：修改配置后，插件会自动重新加载，无需重启 VSCode
@@ -477,7 +463,6 @@
 {
   "vscode_fanyi_plugin.subCommands": [
     {
-      "menu": true,
       "title": "翻译并复制(中->英)",
       "command": "vscode_fanyi_plugin.translateAndCopy",
       "args": {

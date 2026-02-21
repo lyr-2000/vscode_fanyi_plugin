@@ -6,7 +6,6 @@ let fanyiClient: FanyiCoreClient | null = null;
 
 // SubCommand 接口定义
 interface SubCommand {
-    menu?: boolean;
     title: string;
     command: string;
     args?: {
