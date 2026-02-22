@@ -1,6 +1,7 @@
 package fanyi
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -24,6 +25,7 @@ type TencentFanyi struct {
 	cli           *tmt.Client
 	logFileEnable bool
 	group         singleflight.Group // 用于避免并发重复请求
+	timeout time.Duration
 }
 
 var (
@@ -45,10 +47,16 @@ func GetTencentAPI() *TencentFanyi {
 }
 
 func getTencent() *TencentFanyi {
+	timeout := settings.GetInt("timeout")
+	if timeout <= 0 {
+		timeout = 60
+	}
+	x := time.Duration(timeout) * time.Second
 	return &TencentFanyi{
 		Key:           settings.GetKey("tencent_ak"),
 		KeySecret:     settings.GetKey("tencent_secret"),
 		logFileEnable: settings.GetBool("log_file_enable"),
+		timeout: x,
 	}
 }
 
@@ -128,8 +136,10 @@ func (t *TencentFanyi) doTranslate(text string, src string, to string) (string, 
 	// 记录翻译请求日志
 	t.logToFile(fmt.Sprintf("翻译请求 - 原文: %s, 源语言: %s, 目标语言: %s", text, src, to))
 	
+	ctx,abort := context.WithTimeout(context.Background(), t.timeout)
+	defer abort()
 	// 发送请求
-	response, err := t.cli.TextTranslate(request)
+	response, err := t.cli.TextTranslateWithContext(ctx, request)
 	if err != nil {
 		t.logToFile(fmt.Sprintf("翻译失败 - 原文: %s, 错误: %v", text, err))
 		return "", err

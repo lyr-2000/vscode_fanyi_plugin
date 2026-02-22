@@ -1,6 +1,7 @@
 package settings
 
 import "sync"
+import "strconv"
 
 var (
 	mu        sync.Mutex
@@ -49,5 +50,47 @@ func GetBool(key string) bool {
 		return el != 0
 	default:
 		return false
+	}
+}
+
+
+func GetInt(key string) int {
+	mu.Lock()
+	defer mu.Unlock()
+	if FanyiKeys == nil {
+		return 0
+	}
+	if _, ok := FanyiKeys[key]; !ok {
+		return 0
+	}
+	switch el := FanyiKeys[key].(type) {
+	case string:
+		i, err := strconv.Atoi(el)
+		if err != nil {
+			return 0
+		}
+		return i
+	case int:
+		return el
+	case float64:
+		return int(el)
+	case int64:
+		return int(el)
+	case uint64:
+		return int(el)
+	case int32:
+		return int(el)
+	case uint32:
+		return int(el)
+	case int16:
+		return int(el)
+	case uint16:
+		return int(el)
+	case int8:
+		return int(el)
+	case uint8:
+		return int(el)
+	default:
+		return 0
 	}
 }

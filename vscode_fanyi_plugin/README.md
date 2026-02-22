@@ -106,7 +106,8 @@
    {
      "vscode_fanyi_plugin.config": {
        "tencent_ak": "你的腾讯云 Access Key",
-       "tencent_secret": "你的腾讯云 Secret Key"
+       "tencent_secret": "你的腾讯云 Secret Key",
+       "timeout": 60// 60 sec timeout 
      }
    }
    ```
