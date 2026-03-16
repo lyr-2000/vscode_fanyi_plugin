@@ -2,7 +2,7 @@
   "name": "vscode-fanyi-plugin",
   "displayName": "VSCode 划词翻译插件",
   "description": "一个功能强大的 VSCode 划词翻译插件，支持多种翻译服务",
-  "version": "0.1.3",
+  "version": "0.1.5",
   "publisher": "lyr-2000",
   "icon": "images/logo.png",
   "engines": {
@@ -11,8 +11,13 @@
   "categories": [
     "Other"
   ],
+  "extensionKind": [
+    "ui"
+  ],
   "activationEvents": [
-    "onStartupFinished"
+    "onStartupFinished",
+    "onView:vscode_fanyi_plugin.translateView",
+    "onCommand:vscode_fanyi_plugin.openTranslatePanel"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -97,8 +102,33 @@
       {
         "command": "vscode_fanyi_plugin.subCommand",
         "title": "翻译: 自定义子命令"
+      },
+      {
+        "command": "vscode_fanyi_plugin.openTranslatePanel",
+        "title": "打开翻译",
+        "icon": "$(globe)"
       }
     ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "vscode_fanyi_plugin.translateSidebar",
+          "title": "划词翻译",
+          "icon": "$(globe)"
+        }
+      ]
+    },
+    "views": {
+      "vscode_fanyi_plugin.translateSidebar": [
+        {
+          "type": "webview",
+          "id": "vscode_fanyi_plugin.translateView",
+          "name": "翻译",
+          "icon": "$(globe)",
+          "contextualTitle": "划词翻译"
+        }
+      ]
+    },
     "keybindings": [
       {
         "command": "vscode_fanyi_plugin.translateSelection",
@@ -129,6 +159,10 @@
         {
           "command": "vscode_fanyi_plugin.subCommand",
           "title": "翻译: 自定义子命令"
+        },
+        {
+          "command": "vscode_fanyi_plugin.openTranslatePanel",
+          "title": "翻译: 打开翻译"
         }
       ]
     }

@@ -14,6 +14,178 @@ interface SubCommand {
     };
 }
 
+/** Activity Bar 侧边栏翻译视图 Provider */
+class TranslateSidebarProvider implements vscode.WebviewViewProvider {
+    public static readonly viewType = 'vscode_fanyi_plugin.translateView';
+
+    constructor(
+        private readonly _extensionUri: vscode.Uri,
+        private readonly _getConfig: () => { sourceLanguage: string; targetLanguage: string },
+        private readonly _getFanyiClient: () => FanyiCoreClient | null,
+        private readonly _outputChannel: vscode.OutputChannel
+    ) {}
+
+    resolveWebviewView(
+        webviewView: vscode.WebviewView,
+        _context: vscode.WebviewViewResolveContext,
+        _token: vscode.CancellationToken
+    ) {
+        webviewView.webview.options = {
+            enableScripts: true,
+            localResourceRoots: [this._extensionUri]
+        };
+        webviewView.webview.html = getTranslatePanelHtml(this._getConfig());
+
+        webviewView.webview.onDidReceiveMessage(async (data: { type: string; text?: string; sourceLanguage?: string; targetLanguage?: string }) => {
+            if (data.type === 'translate') {
+                const text = (data.text || '').trim();
+                if (!text) { webviewView.webview.postMessage({ type: 'translateResult', result: '' }); return; }
+                const config = this._getConfig();
+                const src = data.sourceLanguage ?? config.sourceLanguage;
+                const tgt = data.targetLanguage ?? config.targetLanguage;
+                const client = this._getFanyiClient();
+                if (!client) { webviewView.webview.postMessage({ type: 'translateError', error: '翻译客户端未初始化' }); return; }
+                try {
+                    const result = await client.translate(text, src, tgt);
+                    webviewView.webview.postMessage({ type: 'translateResult', result });
+                } catch (error: any) {
+                    this._outputChannel.appendLine(`[翻译面板] 翻译失败: ${error?.message || error}`);
+                    webviewView.webview.postMessage({ type: 'translateError', error: error?.message || String(error) });
+                }
+            } else if (data.type === 'copyResult' && data.text) {
+                await vscode.env.clipboard.writeText(data.text);
+            }
+        });
+    }
+}
+
+/** 生成翻译面板 HTML */
+function getTranslatePanelHtml(config: { sourceLanguage: string; targetLanguage: string }): string {
+    const src = config.sourceLanguage || 'auto';
+    const tgt = config.targetLanguage || 'zh';
+    return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>划词翻译</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; padding: 8px; font-family: var(--vscode-font-family); font-size: 13px; }
+        label { display: block; margin-bottom: 4px; color: var(--vscode-foreground); }
+        select { width: 100%; padding: 6px; margin-bottom: 8px; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border); }
+        textarea { width: 100%; min-height: 80px; padding: 8px; margin-bottom: 8px; resize: vertical; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border); font-family: inherit; }
+        .result { width: 100%; min-height: 80px; padding: 8px; margin-bottom: 8px; white-space: pre-wrap; word-break: break-word; background: var(--vscode-editor-background); color: var(--vscode-editor-foreground); border: 1px solid var(--vscode-input-border); overflow-y: auto; }
+        .error { color: var(--vscode-errorForeground); }
+        .row { display: flex; gap: 8px; margin-bottom: 8px; }
+        .row select { flex: 1; }
+        .swap-btn { cursor: pointer; padding: 4px 8px; font-size: 16px; color: var(--vscode-foreground); opacity: 0.7; align-self: center; user-select: none; }
+        .swap-btn:hover { opacity: 1; }
+        button { padding: 6px 12px; background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; cursor: pointer; }
+        button:hover { background: var(--vscode-button-hoverBackground); }
+        .hint { font-size: 11px; color: var(--vscode-descriptionForeground); margin-top: 4px; }
+    </style>
+</head>
+<body>
+    <label>源语言</label>
+    <div class="row">
+        <select id="sourceLang">
+            <option value="auto" ${src === 'auto' ? 'selected' : ''}>自动检测</option>
+            <option value="en" ${src === 'en' ? 'selected' : ''}>英语</option>
+            <option value="zh" ${src === 'zh' ? 'selected' : ''}>中文</option>
+            <option value="ja" ${src === 'ja' ? 'selected' : ''}>日语</option>
+            <option value="ko" ${src === 'ko' ? 'selected' : ''}>韩语</option>
+        </select>
+        <span id="swapLang" class="swap-btn" title="点击互换">⇄</span>
+        <select id="targetLang">
+            <option value="zh" ${tgt === 'zh' ? 'selected' : ''}>中文</option>
+            <option value="en" ${tgt === 'en' ? 'selected' : ''}>英语</option>
+            <option value="ja" ${tgt === 'ja' ? 'selected' : ''}>日语</option>
+            <option value="ko" ${tgt === 'ko' ? 'selected' : ''}>韩语</option>
+        </select>
+    </div>
+    <label>输入文本（Enter 翻译，Shift+Enter 换行）</label>
+    <textarea id="input" placeholder="在此输入要翻译的文本..."></textarea>
+    <p class="hint">输入后 400ms 自动翻译，或按 Enter 立即翻译</p>
+    <label>翻译结果</label>
+    <div id="result" class="result">翻译结果将显示在这里</div>
+    <button id="copyBtn">复制译文</button>
+    <script>
+        const vscode = acquireVsCodeApi();
+        const input = document.getElementById('input');
+        const result = document.getElementById('result');
+        const copyBtn = document.getElementById('copyBtn');
+        const sourceLang = document.getElementById('sourceLang');
+        const targetLang = document.getElementById('targetLang');
+        const swapBtn = document.getElementById('swapLang');
+        let debounceTimer = null;
+
+        swapBtn.addEventListener('click', () => {
+            const src = sourceLang.value;
+            const tgt = targetLang.value;
+            sourceLang.value = tgt === 'auto' ? 'zh' : tgt;
+            targetLang.value = src === 'auto' ? (tgt === 'zh' ? 'en' : 'zh') : src;
+            if (input.value.trim()) doTranslate();
+        });
+        let lastResult = '';
+
+        function doTranslate() {
+            const text = input.value.trim();
+            if (!text) {
+                result.textContent = '翻译结果将显示在这里';
+                result.classList.remove('error');
+                return;
+            }
+            result.textContent = '翻译中...';
+            result.classList.remove('error');
+            vscode.postMessage({ type: 'translate', text, sourceLanguage: sourceLang.value, targetLanguage: targetLang.value });
+        }
+
+        function debouncedTranslate() {
+            if (debounceTimer) clearTimeout(debounceTimer);
+            const text = input.value.trim();
+            if (!text) {
+                result.textContent = '翻译结果将显示在这里';
+                result.classList.remove('error');
+                return;
+            }
+            debounceTimer = setTimeout(() => { debounceTimer = null; doTranslate(); }, 400);
+        }
+
+        input.addEventListener('input', debouncedTranslate);
+
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                if (e.shiftKey) return;
+                e.preventDefault();
+                if (debounceTimer) { clearTimeout(debounceTimer); debounceTimer = null; }
+                doTranslate();
+            }
+        });
+
+        copyBtn.addEventListener('click', () => {
+            if (lastResult) {
+                vscode.postMessage({ type: 'copyResult', text: lastResult });
+            }
+        });
+
+        window.addEventListener('message', (e) => {
+            const msg = e.data;
+            if (msg.type === 'translateResult') {
+                lastResult = msg.result || '';
+                result.textContent = lastResult || '翻译结果将显示在这里';
+                result.classList.remove('error');
+            } else if (msg.type === 'translateError') {
+                lastResult = '';
+                result.textContent = '翻译失败: ' + (msg.error || '未知错误');
+                result.classList.add('error');
+            }
+        });
+    </script>
+</body>
+</html>`;
+}
+
 export function activate(context: vscode.ExtensionContext) {
     console.log('划词翻译插件已激活');
 
@@ -406,6 +578,62 @@ export function activate(context: vscode.ExtensionContext) {
             subCommandDisposables.forEach(d => context.subscriptions.push(d));
         }
     });
+
+    // Activity Bar 翻译图标：点击打开侧边栏翻译界面
+    const translateSidebarProvider = new TranslateSidebarProvider(
+        context.extensionUri, getConfig, () => fanyiClient, outputChannel
+    );
+    context.subscriptions.push(
+        vscode.window.registerWebviewViewProvider(TranslateSidebarProvider.viewType, translateSidebarProvider)
+    );
+
+    // 命令：打开翻译面板（编辑器区域独立标签页，备用入口）
+    const openTranslatePanelCommand = vscode.commands.registerCommand('vscode_fanyi_plugin.openTranslatePanel', () => {
+        const panel = vscode.window.createWebviewPanel(
+            'vscode_fanyi_plugin.translatePanel',
+            '划词翻译',
+            vscode.ViewColumn.One,
+            { enableScripts: true }
+        );
+        const config = getConfig();
+        panel.webview.html = getTranslatePanelHtml(config);
+
+        panel.webview.onDidReceiveMessage(async (data: { type: string; text?: string; sourceLanguage?: string; targetLanguage?: string }) => {
+            if (data.type === 'translate') {
+                const text = (data.text || '').trim();
+                if (!text) {
+                    panel.webview.postMessage({ type: 'translateResult', result: '' });
+                    return;
+                }
+                const src = data.sourceLanguage ?? config.sourceLanguage;
+                const tgt = data.targetLanguage ?? config.targetLanguage;
+                if (!fanyiClient) {
+                    panel.webview.postMessage({ type: 'translateError', error: '翻译客户端未初始化' });
+                    return;
+                }
+                try {
+                    const result = await fanyiClient.translate(text, src, tgt);
+                    panel.webview.postMessage({ type: 'translateResult', result });
+                } catch (error: any) {
+                    const msg = error?.message || String(error);
+                    outputChannel.appendLine(`[翻译面板] 翻译失败: ${msg}`);
+                    panel.webview.postMessage({ type: 'translateError', error: msg });
+                }
+            } else if (data.type === 'copyResult') {
+                const text = data.text || '';
+                if (text) await vscode.env.clipboard.writeText(text);
+            }
+        });
+    });
+    context.subscriptions.push(openTranslatePanelCommand);
+
+    // 状态栏入口：点击打开翻译
+    const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+    statusBarItem.text = '$(globe) 翻译';
+    statusBarItem.tooltip = '点击打开翻译面板';
+    statusBarItem.command = 'vscode_fanyi_plugin.openTranslatePanel';
+    statusBarItem.show();
+    context.subscriptions.push(statusBarItem);
 
     // 悬停提示翻译
     const hoverProvider = vscode.languages.registerHoverProvider('*', {

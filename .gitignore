@@ -10,3 +10,7 @@ test.txt
 *.map
 *.txt
 *.exe~
+openspec
+*.stackdump
+*.bin
+fanyi_core_linux
